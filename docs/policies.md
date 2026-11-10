@@ -29,7 +29,7 @@ Without `contract`, a commercial site on Nager.Date is refused at once (`UsageNo
 | Provider | Limits | Commercial | Attribution |
 |---|---|---|---|
 | google | 10,000/min project, 600/min user, 1,000,000/day | allowed | none (branding rules) |
-| microsoft | 1,000/min per user (the real rule: 10,000 per 10 min per app and mailbox) | allowed | none |
+| microsoft | 10,000 per 10 min per user (mailbox), 4 at a time | allowed | none |
 | caldav | unknown: the server's own | unknown | none |
 | openholidays | unknown (none stated) | allowed | required: ODbL |
 | nager | none ("no rate limits") | by sponsorship | not stated |

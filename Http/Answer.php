@@ -2,12 +2,22 @@
 
 namespace Omnical\Http;
 
-/** What RawClient got back: the status, the headers (names in lower case), the body. */
+/**
+ * What RawClient got back: the status, the headers (names in lower case),
+ * the body, and the URL that answered after redirects (omnisense/contracts'
+ * Http\Answer, field for field; empty when the answer was made by hand).
+ */
 final readonly class Answer
 {
     /** @param array<string, list<string>> $headers */
-    public function __construct(public int $status, public array $headers, public string $body)
+    public function __construct(public int $status, public array $headers, public string $body, public string $url = '')
     {
+    }
+
+    /** omnisense/contracts' Answer (JsonClient::raw()) as omnical's. */
+    public static function of(\Omnisense\Contracts\Http\Answer $answer): self
+    {
+        return new self($answer->status, $answer->headers, $answer->body, $answer->url);
     }
 
     /** A header's first value; null when it was not sent. */

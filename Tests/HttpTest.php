@@ -63,4 +63,16 @@ final class HttpTest extends TestCase
         $answer = (new RawClient(RecordedHttpClient::routes(['~~' => [204, '']]), 'Example'))->request('DELETE', 'https://api.example/events/1');
         self::assertSame([], $answer->json()->toArray());
     }
+
+    public function testRawCallsAreTheKernelsAnswerFieldForField(): void
+    {
+        $http = RecordedHttpClient::routes(['~^REPORT ~' => [207, '<d:multistatus xmlns:d="DAV:"/>', ['Set-Cookie' => ['a=1', 'b=2']]]]);
+        $kernel = (new JsonClient($http, 'Example'))->raw('REPORT', 'https://dav.example/cal/', ['body' => '<report/>']);
+        $answer = (new RawClient($http, 'Example'))->request('REPORT', 'https://dav.example/cal/', ['body' => '<report/>']);
+
+        self::assertSame([$kernel->status, $kernel->headers, $kernel->body, $kernel->url], [$answer->status, $answer->headers, $answer->body, $answer->url]);
+        self::assertSame(['a=1', 'b=2'], $answer->headers['set-cookie'] ?? null, 'every value of a header');
+        self::assertSame('https://dav.example/cal/', $answer->url, 'the URL that answered');
+        self::assertSame('', (new \Omnical\Http\Answer(204, [], ''))->url, 'an answer made by hand, as before');
+    }
 }

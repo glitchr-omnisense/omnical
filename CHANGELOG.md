@@ -2,6 +2,11 @@
 
 ## 1.x (unreleased)
 
+- 2026-11-10, on omnisense/contracts' round 2 (5bac28b or later, still `^1.0@dev`):
+  `Http\RawClient` is the kernel's `JsonClient::raw()` with omnical's exceptions, its own copy of
+  the exchange gone (same constructor, same `request()`); `Http\Answer` gains `url`, the URL that
+  answered after redirects (empty for an answer made by hand), and `Answer::of()` from the
+  kernel's. Headers with several values come whole.
 - 2026-11-10: the family written, on omnisense/contracts from the first day.
   - Three contracts: `CalendarEventsInterface` (calendars, events in a span, one event, create,
     update, delete), `FreeBusyInterface`, `HolidaysInterface`.

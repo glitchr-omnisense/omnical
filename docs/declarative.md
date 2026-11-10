@@ -111,5 +111,6 @@ Each family keeps its own provider and factory (its model's fields, its Capabili
 `resources/*.schema.json` part for `map` and `describe`, and its own bare test case. Two more
 changes the kernel could take at the same time, seen while writing this family: a raw call in
 `JsonClient` (any method, the status and headers back, an empty or non-JSON body: omnical's
-`Http\RawClient` duplicates `send()` for want of it), and the URL that finally answered after
-redirects (CalDAV resolves hrefs against it).
+`Http\RawClient` duplicated `send()` for want of it), and the URL that finally answered after
+redirects (CalDAV resolves hrefs against it). Both are in the kernel since contracts 5bac28b
+(`JsonClient::raw()`, `Http\Answer::$url`): `Http\RawClient` now calls it.
