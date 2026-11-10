@@ -2,6 +2,12 @@
 
 ## 1.x (unreleased)
 
+- 2026-11-10, writes sent once: `Http\JsonClient` (every call of every provider, `Http\RawClient`
+  and the OAuth client included) keeps the HTTP client it is given with its retries
+  off (omnisense/contracts' `Http\NoRetry`, which omnisense/contracts 1568f2c brings; with an older
+  kernel the client is kept as given), so Symfony's `RetryableHttpClient` never sends an event created, moved or deleted
+  twice. A `MockHttpClient` is kept as given. docs/policies.md. Tests/NoRetryTest.
+
 - 2026-11-10, on omnisense/contracts' round 2 (5bac28b or later, still `^1.0@dev`):
   `Http\RawClient` is the kernel's `JsonClient::raw()` with omnical's exceptions, its own copy of
   the exchange gone (same constructor, same `request()`); `Http\Answer` gains `url`, the URL that
