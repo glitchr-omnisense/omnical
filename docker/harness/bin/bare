@@ -1,0 +1,106 @@
+#!/usr/bin/env php
+<?php
+
+/*
+ * Omnical in plain PHP: no bundle, no container, no framework. A registry
+ * of one provider answering from what it holds - a calendar's events, one
+ * written, the free spans two calendars share, a country's holidays - then
+ * a declared provider made of a definition alone (holidays read from a
+ * recorded answer), a provider's JSON call (a 404, an error whose message
+ * keeps the key out), a DELETE answered 204, an OAuth token refreshed
+ * through a recorded token endpoint. Prints what happened and every class
+ * and file PHP loaded, as JSON.
+ */
+
+use Omnical\Auth\ArraySecrets;
+use Omnical\Auth\InMemoryTokenStore;
+use Omnical\Auth\OAuth2Client;
+use Omnical\Auth\OAuthToken;
+use Omnical\Auth\RefreshingAccessToken;
+use Omnical\Declarative\DeclarativeFactory;
+use Omnical\Declarative\Definition;
+use Omnical\Exception\ProviderException;
+use Omnical\Http\JsonClient;
+use Omnical\Http\RawClient;
+use Omnical\Model\BusySlot;
+use Omnical\Model\Calendar;
+use Omnical\Model\Event;
+use Omnical\Model\EventQuery;
+use Omnical\Model\FreeBusy;
+use Omnical\Model\FreeBusyQuery;
+use Omnical\Model\Holiday;
+use Omnical\Model\HolidayQuery;
+use Omnical\Model\HolidayType;
+use Omnical\Model\Recurrence;
+use Omnical\Registry;
+use Omnical\Testing\FixedProviderFactory;
+use Omnical\Testing\RecordedHttpClient;
+
+require getenv('OMNICAL_AUTOLOAD') ?: '/harness/vendor/autoload.php';
+
+$paris = new DateTimeZone('Europe/Paris');
+$at = static fn (string $time) => new DateTimeImmutable('2026-11-16T'.$time, $paris);
+$registry = new Registry([new FixedProviderFactory(
+    [new Calendar('cabinet', 'Cabinet', 'fixed', 'Europe/Paris', primary: true), new Calendar('associate', 'Associée', 'fixed', 'Europe/Paris')],
+    [
+        new Event('Rendez-vous', $at('09:00'), $at('10:00'), id: 'e1', calendarId: 'cabinet'),
+        new Event('Audience', $at('11:00'), $at('12:30'), id: 'e2', calendarId: 'associate'),
+        new Event('Point hebdomadaire', $at('14:00'), $at('14:30'), id: 'e3', calendarId: 'cabinet', recurrence: Recurrence::rule('FREQ=WEEKLY;BYDAY=MO')),
+    ],
+    [
+        new Holiday('Armistice 1918', new DateTimeImmutable('2026-11-11'), country: 'FR'),
+        new Holiday('Saint-Étienne', new DateTimeImmutable('2026-12-26'), country: 'FR', nationwide: false, regions: ['FR-57', 'FR-67', 'FR-68']),
+    ],
+)], ['office' => ['factory' => 'fixed']]);
+
+$report['capabilities'] = $registry->get('office')->capabilities()->contracts();
+$calendar = $registry->calendarEvents('office');
+$created = $calendar->create(new Event('Consultation', $at('16:00'), $at('16:45'), calendarId: 'cabinet'));
+$report['created'] = [$created->id, $created->etag, $created->timeZone];
+$report['events'] = array_map(static fn (Event $e) => [$e->title, $e->start->format('H:i'), $e->recurrence?->frequency()], $calendar->events(new EventQuery('cabinet', $at('00:00'), $at('23:59'))));
+$busy = $registry->freeBusy('office')->freeBusy(new FreeBusyQuery(['cabinet', 'associate'], $at('08:00'), $at('18:00')));
+$report['free'] = array_map(static fn (BusySlot $s) => $s->start->format('H:i').'-'.$s->end->format('H:i'), FreeBusy::common($busy, $at('08:00'), $at('18:00'), 3600));
+$report['holidays'] = array_map(static fn (Holiday $h) => [$h->first->format('Y-m-d'), $h->name], $registry->holidays('office')->holidays(new HolidayQuery('FR', new DateTimeImmutable('2026-11-01'), new DateTimeImmutable('2026-12-31'), 'FR-67')));
+
+// A provider described by data alone: no class of its own.
+$definition = Definition::fromArray([
+    'name' => 'example-holidays',
+    'capabilities' => ['holidays'],
+    'baseUri' => 'https://holidays.example.org',
+    'endpoints' => ['holidays' => [
+        'path' => '/{country}/{year}',
+        'split' => 'year',
+        'query' => ['lang' => '{language}'],
+        'map' => ['date' => '/date', 'name' => ['/names[lang={language}]/text', '/names/0/text'], 'regions' => ['pointer' => '/regions', 'transform' => 'list'], 'types' => '/type'],
+    ]],
+    'policy' => ['provider' => 'example-holidays', 'rateLimits' => [], 'requirements' => ['key' => false]],
+]);
+$http = RecordedHttpClient::routes(['~^GET https://holidays\.example\.org/DE/2027\?lang=de$~' => [200, '[{"date":"2027-10-03","type":"public","names":[{"lang":"en","text":"German Unity Day"},{"lang":"de","text":"Tag der Deutschen Einheit"}]},{"date":"2027-10-31","type":"public","regions":"DE-BB","names":[{"lang":"de","text":"Reformationstag"}]}]']]);
+$declared = new Registry([new DeclarativeFactory($definition, $http)], ['de' => ['factory' => 'example-holidays']]);
+$report['declared'] = array_map(static fn (Holiday $h) => [$h->first->format('m-d'), $h->name, $h->regions, $h->type() === HolidayType::Public], $declared->holidays('de')->holidays(HolidayQuery::year('DE', 2027, language: 'de')));
+
+$http = RecordedHttpClient::routes([
+    '~^GET https://api\.example\.org/events/1~' => [200, '{"summary": "Rendez-vous"}'],
+    '~^GET https://api\.example\.org/events/3~' => [500, '<h1>Internal error</h1>'],
+    '~^DELETE https://api\.example\.org/events/1~' => [204, ''],
+    '~^POST https://oauth\.example\.org/token~' => [200, '{"access_token":"fresh-token","expires_in":3600,"token_type":"Bearer"}'],
+]);
+$json = new JsonClient($http, 'Example', ['User-Agent' => 'calendar-bare/1.0']);
+$report['json'] = [$json->get('https://api.example.org/events/1', ['key' => 'not-a-real-key'])?->string('summary'), $http->header('User-Agent')];
+$report['json-404'] = $json->get('https://api.example.org/events/2');
+try {
+    $json->get('https://api.example.org/events/3', ['key' => 'not-a-real-key']);
+} catch (ProviderException $e) {
+    $report['json-error'] = [$e->getMessage(), $e->status()];
+}
+$report['delete'] = (new RawClient($http, 'Example'))->request('DELETE', 'https://api.example.org/events/1')->status;
+$store = new InMemoryTokenStore(['user:1' => new OAuthToken('stale-token', 'a-refresh-token', 1000)]);
+$oauth = new OAuth2Client($http, 'Example', 'https://oauth.example.org/authorize', 'https://oauth.example.org/token', 'client-id', new ArraySecrets(['EXAMPLE_SECRET' => 'not-a-real-secret']), 'EXAMPLE_SECRET', now: static fn () => 2000);
+$token = new RefreshingAccessToken($oauth, $store, 'user:1', now: static fn () => 2000);
+$report['oauth'] = [$token->token(), $store->get('user:1')?->refreshToken, $store->get('user:1')?->expiresAt];
+
+echo json_encode($report + ['loaded' => [
+    'symbols' => [...get_declared_classes(), ...get_declared_interfaces(), ...get_declared_traits()],
+    'files' => array_map('realpath', get_included_files()),
+    'eager' => array_map('realpath', array_values(is_file($f = dirname((string) (new ReflectionClass(Composer\Autoload\ClassLoader::class))->getFileName()).'/autoload_files.php') ? require $f : [])),
+]], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT), "\n";

@@ -1,0 +1,7 @@
+{
+    "provider": "example-holidays",
+    "rateLimits": [{"max": 3, "window": "minute", "operations": ["holidays"]}],
+    "rights": {"commercial": "allowed", "attribution": {"required": true, "text": "Example Holidays", "where": ["display"]}, "licence": "CC0-1.0"},
+    "requirements": {"key": true, "userAgent": {"required": true, "pattern": "~^\\S+/\\S+.*(?:https?://|@)~"}},
+    "provenance": {"terms": "https://holidays.example/terms", "verifiedAt": "2026-11-10", "declaredBy": "maintainer"}
+}

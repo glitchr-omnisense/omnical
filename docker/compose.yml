@@ -1,0 +1,32 @@
+# omnisense/omnical with every omnical/* provider:
+#
+#   docker compose run --rm omnical test       # every package's tests (recorded answers, an in-process sabre/dav server; no network)
+#   docker compose run --rm omnical bare       # plain PHP: a registry, events, free spans, holidays, a declared provider - and what PHP loaded
+#   docker compose run --rm omnical live       # the few checks against the two open holiday APIs, within their policies
+#   docker compose run --rm omnical phpstan    # PHPStan, each package at the highest level
+#   docker compose down -v                     # the harness's volume gone
+#
+# Providers come from GitHub (branch 1.x) unless their checkout sits under OMNICAL_PLUGINS (set it
+# to ../.. in .env when this core sits in the workspace beside them): then that checkout is what runs.
+# omnisense/contracts likewise: its checkout under OMNISENSE_CONTRACTS (../../../omnisense-contracts
+# in .env when it sits beside the family's folder), its tests run with the family's; GitHub otherwise.
+name: omnical-harness
+
+services:
+  omnical:
+    build: .
+    image: omnisense/omnical-harness
+    entrypoint: ["/omnical/core/docker/entrypoint.sh"]
+    # One service, no server beside it: Docker's default bridge, no network of its own to create.
+    network_mode: bridge
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - ..:/omnical/core
+      - ${OMNICAL_PLUGINS:-./plugins}:/omnical/plugins:ro
+      - ${OMNISENSE_CONTRACTS:-./contracts}:/omnisense/contracts:ro
+      - harness:/harness
+
+volumes:
+  harness:

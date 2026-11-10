@@ -1,11 +1,24 @@
 {
     "name": "omnisense/omnical",
     "type": "library",
-    "description": "Reserved, not released yet: Read and write a calendar, and know the public holidays, under any PHP host.",
+    "description": "Omnical: calendars and public holidays under any PHP host, whoever keeps them - a user's calendars and their events read and written (time zones, recurrence kept as RRULE data, attendees and their answers, ETags against lost updates), busy time and the free spans everyone shares, a country's public and school holidays by region and type. One family in three contracts: calendar-events, free-busy, holidays. Providers are packages of their own (omnical/google, omnical/microsoft, omnical/caldav in code; omnical/openholidays, omnical/nager as data: a provider described by a definition file, loaded at run time with no class of its own), each declaring its usage policy, enforced on every call and tightened by a site's configuration - on omnisense/contracts. OAuth 2.0 (authorization code, PKCE, refresh) and secrets by reference included.",
     "keywords": [
-        "omnical",
-        "reserved",
-        "framework-agnostic"
+        "calendar",
+        "events",
+        "free-busy",
+        "availability",
+        "holidays",
+        "public-holidays",
+        "school-holidays",
+        "rrule",
+        "icalendar",
+        "caldav",
+        "google-calendar",
+        "microsoft-graph",
+        "oauth2",
+        "declarative",
+        "framework-agnostic",
+        "omnical"
     ],
     "homepage": "https://github.com/glitchr-omnisense/omnical",
     "license": "MIT",
@@ -16,11 +29,39 @@
         }
     ],
     "require": {
-        "php": ">=8.2"
+        "php": ">=8.2",
+        "ext-mbstring": "*",
+        "omnisense/contracts": "^1.0@dev",
+        "symfony/http-client-contracts": "^3.0"
+    },
+    "require-dev": {
+        "phpstan/phpstan": "^2.1",
+        "phpunit/phpunit": "^11.0",
+        "symfony/http-client": "^6.4|^7.0|^8.0"
+    },
+    "suggest": {
+        "omnical/google": "Google Calendar (API v3): calendars, events read and written, free/busy, over OAuth 2.0",
+        "omnical/microsoft": "Microsoft Graph: Outlook and Microsoft 365 calendars, events read and written, schedules (free/busy), over OAuth 2.0",
+        "omnical/caldav": "CalDAV (RFC 4791): iCloud, Fastmail, Nextcloud, any sabre/dav server - calendars, events read and written, free/busy",
+        "omnical/openholidays": "OpenHolidays API: public and school holidays of 36 countries by region, no key, open data (ODbL) - a declared provider",
+        "omnical/nager": "Nager.Date: public holidays of 200+ countries, no key (commercial use needs a sponsorship) - a declared provider",
+        "symfony/http-client": "The HTTP client a declared provider uses when none is given",
+        "symfony/yaml": "Provider definitions written in YAML (JSON needs nothing)",
+        "omnisense/omnibridge": "The host contracts; omnibridge/symfony and omnibridge/laravel wire omnical into their host when a site needs it"
     },
     "autoload": {
         "psr-4": {
             "Omnical\\": ""
+        },
+        "exclude-from-classmap": [
+            "/Tests/",
+            "/docker/",
+            "/bin/"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Omnical\\Tests\\": "Tests/"
         }
     },
     "extra": {

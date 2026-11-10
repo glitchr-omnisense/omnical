@@ -1,0 +1,40 @@
+{
+    "$schema": "../../../resources/declarative-provider.schema.json",
+    "name": "example-holidays",
+    "title": "Example Holidays",
+    "family": "omnical",
+    "capabilities": ["holidays"],
+    "baseUri": "https://holidays.example/api/",
+    "auth": {"type": "header", "name": "X-Api-Key", "secret": "EXAMPLE_HOLIDAYS_KEY"},
+    "headers": {"Accept": "application/json"},
+    "describe": {"countries": ["de", "FR"], "regions": true, "types": ["public", "school"]},
+    "endpoints": {
+        "holidays": [
+            {
+                "path": "/public/{country}/{year}",
+                "split": "year",
+                "tags": ["public", "bank"],
+                "query": {"lang": "{language|upper}", "region": "{region}"},
+                "list": "/items",
+                "map": {
+                    "id": "/id",
+                    "date": "/start",
+                    "end": "/end",
+                    "name": ["/names[lang={language}]/text", "/names/0/text"],
+                    "nationwide": {"pointer": "/scope", "values": {"national": true, "regional": false}},
+                    "regions": {"pointer": "/areas", "each": "/code"},
+                    "types": {"pointer": "/kind", "values": {"Feiertag": "public", "Bank": "bank"}, "transform": "list"},
+                    "halfDay": {"pointer": "/half", "transform": "bool"}
+                },
+                "errors": {"400": "empty"}
+            },
+            {
+                "path": "/school/{country}",
+                "tags": ["school"],
+                "query": {"from": "{from}", "to": "{to:Ymd}"},
+                "map": {"date": "/start", "end": "/end", "name": "/name", "regions": {"pointer": "/area", "transform": "list"}, "types": {"const": "school"}}
+            }
+        ]
+    },
+    "policy": "policy.json"
+}

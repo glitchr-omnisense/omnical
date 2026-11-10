@@ -1,0 +1,106 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://github.com/glitchr-omnisense/omnical/blob/1.x/resources/declarative-provider.schema.json",
+    "title": "A provider described as data",
+    "description": "A REST JSON provider declared by a definition file: Omnical\\Declarative\\Definition::fromArray() reads it, refusing unknown keys. omnical declares holidays providers (\"capabilities\": [\"holidays\"]).",
+    "type": "object",
+    "required": ["name", "capabilities", "baseUri", "endpoints", "policy"],
+    "additionalProperties": false,
+    "properties": {
+        "$schema": {"type": "string"},
+        "name": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_.:-]*$", "description": "The factory's name: what a registry's \"factory\" names."},
+        "title": {"type": "string"},
+        "family": {"type": "string", "description": "The family it belongs to: \"omnical\"."},
+        "capabilities": {"type": "array", "items": {"type": "string"}, "minItems": 1, "uniqueItems": true},
+        "baseUri": {"type": "string", "pattern": "^https?://"},
+        "auth": {
+            "oneOf": [
+                {"const": "none"},
+                {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["type"],
+                    "properties": {
+                        "type": {"enum": ["none", "header", "query", "bearer", "basic"]},
+                        "name": {"type": "string", "description": "The header or query parameter (header, query)."},
+                        "secret": {"type": "string", "description": "The secret's reference (an environment variable's name by default), never the secret."},
+                        "username": {"type": "string", "description": "basic"}
+                    }
+                }
+            ]
+        },
+        "headers": {"$ref": "#/$defs/texts"},
+        "describe": {
+            "type": "object",
+            "description": "What the family reads into its Capabilities. omnical: countries (ISO 3166-1 alpha-2), regions (bool), types (holiday types).",
+            "properties": {
+                "countries": {"type": "array", "items": {"type": "string", "pattern": "^[A-Za-z]{2}$"}},
+                "regions": {"type": "boolean"},
+                "types": {"type": "array", "items": {"enum": ["public", "bank", "school", "optional", "observance", "authorities"]}}
+            }
+        },
+        "endpoints": {
+            "type": "object",
+            "description": "Each operation: one endpoint or a list.",
+            "additionalProperties": {
+                "oneOf": [
+                    {"$ref": "#/$defs/endpoint"},
+                    {"type": "array", "items": {"$ref": "#/$defs/endpoint"}, "minItems": 1}
+                ]
+            }
+        },
+        "policy": {
+            "description": "The usage policy: a file beside the definition (omnisense/contracts' usage-policy.schema.json), or the policy itself.",
+            "oneOf": [{"type": "string"}, {"type": "object"}]
+        }
+    },
+    "$defs": {
+        "texts": {"type": "object", "additionalProperties": {"type": ["string", "number", "boolean"]}},
+        "pointer": {"type": "string", "description": "A JSON Pointer (RFC 6901); a segment may pick a list's item by a field: /name[language={language}]/text."},
+        "field": {
+            "oneOf": [
+                {"$ref": "#/$defs/pointer"},
+                {"type": "array", "items": {"$ref": "#/$defs/pointer"}, "minItems": 1},
+                {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "pointer": {"oneOf": [{"$ref": "#/$defs/pointer"}, {"type": "array", "items": {"$ref": "#/$defs/pointer"}}]},
+                        "each": {"$ref": "#/$defs/pointer"},
+                        "values": {"type": "object"},
+                        "transform": {
+                            "oneOf": [
+                                {"$ref": "#/$defs/transform"},
+                                {"type": "array", "items": {"$ref": "#/$defs/transform"}}
+                            ]
+                        },
+                        "default": {},
+                        "const": {}
+                    }
+                }
+            ]
+        },
+        "transform": {"enum": ["not", "upper", "lower", "trim", "string", "int", "bool", "list", "first", "date"]},
+        "endpoint": {
+            "type": "object",
+            "required": ["path"],
+            "additionalProperties": false,
+            "properties": {
+                "method": {"enum": ["GET", "POST", "get", "post"]},
+                "path": {"type": "string", "description": "Templates: {country}, {from:Y-m-d}, {language|upper}; each value URL-encoded."},
+                "query": {"$ref": "#/$defs/texts"},
+                "headers": {"$ref": "#/$defs/texts"},
+                "body": {"$ref": "#/$defs/texts", "description": "Sent as JSON."},
+                "split": {"enum": ["year"]},
+                "tags": {"type": "array", "items": {"type": "string"}},
+                "list": {"type": "string", "description": "The pointer to the answer's items: \"\" or \"/\" for the answer itself."},
+                "map": {"type": "object", "additionalProperties": {"$ref": "#/$defs/field"}},
+                "errors": {
+                    "type": "object",
+                    "propertyNames": {"pattern": "^[1-5][0-9][0-9]$"},
+                    "additionalProperties": {"enum": ["empty", "fail", "wait"]}
+                }
+            }
+        }
+    }
+}
