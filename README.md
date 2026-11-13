@@ -37,9 +37,13 @@ use Omnical\Registry;
 $calendars = new Registry(DeclarativeFactory::installed(), [
     'holidays' => ['factory' => 'openholidays', 'options' => ['user_agent' => 'MySite/1.0 (https://example.org; contact@example.org)']],
 ]);
+// No region (null): the nationwide holidays and every region's, each saying where it holds.
 foreach ($calendars->holidays('holidays')->holidays(HolidayQuery::year('FR', 2027, null, 'fr')) as $holiday) {
-    echo $holiday->first->format('Y-m-d'), ' ', $holiday->name, "\n";              // 2027-01-01 Jour de l'an...
+    echo $holiday->first->format('Y-m-d'), ' ', $holiday->name, $holiday->nationwide ? '' : ' ('.implode(', ', $holiday->regions).')', "\n";
 }
+// 2027-01-01 Jour de l'an, 2027-03-26 Vendredi saint (FR-GE-BR, FR-GE-HR, FR-GE-MO), ... 2027-12-25 Noël:
+// the eleven nationwide and the regional ones - "Abolition de l'esclavage" six times, one date per overseas region.
+// One region's: HolidayQuery::year('FR', 2027, 'FR-GP', 'fr'). The nationwide alone: if ($holiday->nationwide).
 ```
 
 Calendars and holidays together:

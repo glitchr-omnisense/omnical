@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-11-13
+
+### Changed
+- README: the first call prints where each regional holiday holds and says what a query without a
+  region answers - the nationwide holidays and every region's (as `HolidayQuery` documents), so
+  "Abolition de l'esclavage" comes six times, one date per overseas region; how to ask one region,
+  or keep the nationwide alone. No change of behaviour.
+
 ## [1.0.0] - 2026-11-13
 
 The first stable version. It requires `omnisense/contracts` `^1.0` with no stability flag, so `composer require omnisense/omnical` installs it in a project with Composer's default minimum-stability; the 1.x series follows semantic versioning. A tag `vX.Y.Z` is released by `.github/workflows/release.yml` once the package's CI passes on it.
