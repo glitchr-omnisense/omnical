@@ -28,9 +28,8 @@ final class JsonClient extends \Omnisense\Contracts\Http\JsonClient
     /** @param array<string, string> $headers sent with every request */
     public function __construct(HttpClientInterface $http, string $provider, array $headers = [], ?Backoff $backoff = null)
     {
-        // Sent once: the application's client keeps no retry of its own (omnisense/contracts' Http\NoRetry, from
-        // contracts 1568f2c; a site whose vendor holds an older kernel keeps its client as given).
-        parent::__construct(class_exists(NoRetry::class) ? NoRetry::of($http) : $http, $provider, $headers, $backoff);
+        // Sent once: the application's client keeps no retry of its own (omnisense/contracts' Http\NoRetry).
+        parent::__construct(NoRetry::of($http), $provider, $headers, $backoff);
     }
 
     /**

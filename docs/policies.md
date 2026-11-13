@@ -41,5 +41,4 @@ with its retries off where every call goes out, omnical's `Http\JsonClient`
 (omnisense/contracts' `Http\NoRetry`): Symfony's `RetryableHttpClient`
 (`framework.http_client`'s `retry_failed`) would send an event created, moved or deleted again on a 429, 502 or 503, and a
 429 retried by the client never reaches the provider's wait. Nothing retries a call; the caller
-decides. A `MockHttpClient` is kept as given (its `getRequestsCount()` still counts). It needs
-omnisense/contracts 1568f2c or later; with an older one the client is kept as given.
+decides. A `MockHttpClient` is kept as given (its `getRequestsCount()` still counts).

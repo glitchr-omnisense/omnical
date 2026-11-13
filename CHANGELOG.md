@@ -1,6 +1,15 @@
 # Changelog
 
-## 1.x (unreleased)
+## [Unreleased]
+
+## [1.0.0] - 2026-11-13
+
+The first stable version. It requires `omnisense/contracts` `^1.0` with no stability flag, so `composer require omnisense/omnical` installs it in a project with Composer's default minimum-stability; the 1.x series follows semantic versioning. A tag `vX.Y.Z` is released by `.github/workflows/release.yml` once the package's CI passes on it.
+
+- 2026-11-13, for 1.0.0: `Http\JsonClient` always takes the client through `NoRetry::of()`; the fallback
+  for a kernel older than omnisense/contracts 1568f2c (the client kept as given when `NoRetry` was
+  missing) is gone, since `^1.0` always has it. The README opens on the install line and a first
+  call that needs no account (the public holidays of OpenHolidays).
 
 - 2026-11-10, writes sent once: `Http\JsonClient` (every call of every provider, `Http\RawClient`
   and the OAuth client included) keeps the HTTP client it is given with its retries

@@ -17,6 +17,33 @@ contracts.
 | [omnical/openholidays](https://github.com/glitchr-omnisense/omnical-openholidays) | holidays - 36 countries, public and school holidays, ODbL | **data** (`provider.json`) | none |
 | [omnical/nager](https://github.com/glitchr-omnisense/omnical-nager) | holidays - 200+ countries; commercial use needs a sponsorship | **data** (`provider.json`) | none |
 
+## Installation and a first call
+
+```sh
+composer require omnisense/omnical omnical/openholidays
+```
+
+The public holidays need no account (OpenHolidays and Nager.Date take no key); Google Calendar and
+Microsoft Graph need an OAuth client of one's own and the user's consent, CalDAV an account on its
+server:
+
+```php
+require __DIR__.'/vendor/autoload.php';
+
+use Omnical\Declarative\DeclarativeFactory;
+use Omnical\Model\HolidayQuery;
+use Omnical\Registry;
+
+$calendars = new Registry(DeclarativeFactory::installed(), [
+    'holidays' => ['factory' => 'openholidays', 'options' => ['user_agent' => 'MySite/1.0 (https://example.org; contact@example.org)']],
+]);
+foreach ($calendars->holidays('holidays')->holidays(HolidayQuery::year('FR', 2027, null, 'fr')) as $holiday) {
+    echo $holiday->first->format('Y-m-d'), ' ', $holiday->name, "\n";              // 2027-01-01 Jour de l'an...
+}
+```
+
+Calendars and holidays together:
+
 ```php
 use Omnical\Declarative\DeclarativeFactory;
 use Omnical\Model\{EventQuery, FreeBusy, FreeBusyQuery, HolidayQuery};
